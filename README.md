@@ -2,6 +2,8 @@
 
 An Android-first prototype for offline, direct messaging over nearby transports:
 
+> **Prototype warning:** This project is experimental and has not been tested across a range of devices. Wi-Fi connections are not cryptographically authenticated and messages and files are not end-to-end encrypted. Do not use it for sensitive communication.
+
 - Bluetooth Classic RFCOMM for short text messages between already paired phones.
 - Local Wi-Fi for direct chat and media transfer between devices on the same router/access point, including networks without internet.
 
@@ -34,3 +36,7 @@ Routers and access points can extend a local network. Ethernet switches can conn
 Build with JDK 17 and Android SDK 35 using `./gradlew assembleDebug`.
 
 To try it, install the debug APK on two Android phones. Grant Nearby devices permissions. For Wi-Fi, put both phones on the same router/AP, open Nearby Chat, wait for the single peer entry, then send text or use Attach. For Bluetooth, pair the phones in Android settings first and open the app on both phones. When both paths are available, short text uses Bluetooth first and falls back to Wi-Fi if the Bluetooth send fails. Attachments always use Wi-Fi and the receiving phone asks before saving. Keep the app open during transfers.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
