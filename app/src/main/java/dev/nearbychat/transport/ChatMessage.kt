@@ -8,6 +8,15 @@ data class ChatMessage(
     val incoming: Boolean,
 )
 
+data class GroupChatEnvelope(
+    val senderId: String,
+    val sender: String,
+    val groupId: String,
+    val groupName: String,
+    val encrypted: Boolean,
+    val payload: String,
+)
+
 data class ChatPeer(
     val id: String,
     val name: String,

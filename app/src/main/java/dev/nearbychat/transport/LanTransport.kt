@@ -27,6 +27,7 @@ class LanTransport(context: Context, private val listener: Listener) {
         fun onPeer(peer: ChatPeer)
         fun onPeerLost(id: String, route: Route)
         fun onMessage(message: ChatMessage)
+        fun onGroupMessage(message: GroupChatEnvelope)
         fun requestFileApproval(offer: IncomingFileOffer, respond: (Boolean) -> Unit)
         fun onFileReceived(senderId: String, sender: String, file: File, mime: String)
         fun onFileSent(name: String, byteCount: Long)
@@ -120,6 +121,38 @@ class LanTransport(context: Context, private val listener: Listener) {
         }
     }
 
+    /** Sends one group post to every currently discovered Wi-Fi peer on this local network. */
+    fun sendGroupMessage(groupId: String, groupName: String, encrypted: Boolean, payload: String) {
+        val targets = peers.values.filter { it.hasWifi }.distinctBy { it.id }
+        if (targets.isEmpty()) {
+            listener.onStatus("No nearby Wi-Fi peers are available for this group")
+            return
+        }
+        thread(name = "nearbychat-group-send") {
+            var delivered = 0
+            targets.forEach { peer ->
+                try {
+                    val host = peer.wifiHost ?: return@forEach
+                    val port = peer.wifiPort ?: return@forEach
+                    var sent = false
+                    Socket(host, port).use { socket ->
+                        socket.soTimeout = SOCKET_TIMEOUT_MS
+                        val input = socket.getInputStream()
+                        val output = socket.getOutputStream()
+                        output.write(WireFormat.encodeHello(deviceId, deviceName)); output.flush()
+                        val hello = WireFormat.decode(WireFormat.readLine(input) ?: "") as? WireFormat.Frame.Hello ?: return@use
+                        listener.onPeer(ChatPeer(hello.id, hello.name, host, port))
+                        output.write(WireFormat.encodeGroupText(deviceId, deviceName, groupId, groupName, encrypted, payload))
+                        output.flush()
+                        sent = true
+                    }
+                    if (sent) delivered++
+                } catch (_: Exception) { }
+            }
+            if (delivered == 0) listener.onStatus("Group message could not reach any nearby Wi-Fi peers")
+        }
+    }
+
     fun sendFile(peer: ChatPeer, uri: Uri) {
         val host = peer.wifiHost ?: return listener.onStatus("That peer is no longer reachable on Wi-Fi")
         val port = peer.wifiPort ?: return listener.onStatus("That peer is no longer reachable on Wi-Fi")
@@ -194,6 +227,10 @@ class LanTransport(context: Context, private val listener: Listener) {
                     is WireFormat.Frame.Text -> {
                         if (frame.id != hello.id) return
                         listener.onMessage(ChatMessage(frame.id, frame.name, frame.text, "Wi-Fi", incoming = true))
+                    }
+                    is WireFormat.Frame.GroupText -> {
+                        if (frame.id != hello.id) return
+                        listener.onGroupMessage(GroupChatEnvelope(frame.id, frame.name, frame.groupId, frame.groupName, frame.encrypted, frame.payload))
                     }
                     is WireFormat.Frame.File -> receiveFile(input, output, hello, frame)
                     else -> Unit
