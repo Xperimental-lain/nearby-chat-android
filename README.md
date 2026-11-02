@@ -39,4 +39,8 @@ To try it, install the debug APK on two Android phones. Grant Nearby devices per
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE).
+Copyright (c) 2026 Xperimental-lain.
+
+Unless stated otherwise, this project is licensed under the GNU General Public License, version 3 or (at your option) any later version. See [LICENSE](LICENSE).
+
+The version publicly released under MIT remains available under that earlier license to anyone who received it; this change applies to the project going forward.
